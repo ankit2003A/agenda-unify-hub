@@ -1,7 +1,10 @@
 
 import React from 'react';
-import { Calendar, Plus, Filter, Settings } from 'lucide-react';
+import { Calendar, Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationCenter from './NotificationCenter';
+import UserProfile from './UserProfile';
+import { Meeting } from '../types/Meeting';
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -9,6 +12,7 @@ interface CalendarHeaderProps {
   onNextMonth: () => void;
   onCreateMeeting: () => void;
   onFilterToggle: () => void;
+  meetings: Meeting[];
 }
 
 const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -17,6 +21,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onNextMonth,
   onCreateMeeting,
   onFilterToggle,
+  meetings,
 }) => {
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -48,6 +53,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         </div>
 
         <div className="flex items-center space-x-3">
+          <NotificationCenter meetings={meetings} />
+          
           <Button variant="outline" onClick={onFilterToggle} className="flex items-center space-x-2">
             <Filter className="h-4 w-4" />
             <span>Filter</span>
@@ -57,6 +64,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             <Plus className="h-4 w-4" />
             <span>New Meeting</span>
           </Button>
+
+          <UserProfile />
         </div>
       </div>
     </div>

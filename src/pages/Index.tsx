@@ -4,6 +4,7 @@ import CalendarHeader from '../components/CalendarHeader';
 import CalendarGrid from '../components/CalendarGrid';
 import MeetingScheduler from '../components/MeetingScheduler';
 import PlatformFilter from '../components/PlatformFilter';
+import ProtectedRoute from '../components/ProtectedRoute';
 import { mockMeetings } from '../data/mockMeetings';
 import { Meeting } from '../types/Meeting';
 import { useToast } from '@/hooks/use-toast';
@@ -85,56 +86,59 @@ const Index: React.FC = () => {
   }, [isFilterOpen]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <CalendarHeader
-        currentDate={currentDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        onCreateMeeting={handleCreateMeeting}
-        onFilterToggle={() => setIsFilterOpen(!isFilterOpen)}
-      />
-
-      <div className="relative">
-        <CalendarGrid
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50">
+        <CalendarHeader
           currentDate={currentDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onCreateMeeting={handleCreateMeeting}
+          onFilterToggle={() => setIsFilterOpen(!isFilterOpen)}
           meetings={filteredMeetings}
-          onDateClick={handleDateClick}
-          onMeetingClick={handleMeetingClick}
         />
 
-        <PlatformFilter
-          isOpen={isFilterOpen}
-          onClose={() => setIsFilterOpen(false)}
-          selectedPlatforms={selectedPlatforms}
-          onPlatformToggle={handlePlatformToggle}
+        <div className="relative">
+          <CalendarGrid
+            currentDate={currentDate}
+            meetings={filteredMeetings}
+            onDateClick={handleDateClick}
+            onMeetingClick={handleMeetingClick}
+          />
+
+          <PlatformFilter
+            isOpen={isFilterOpen}
+            onClose={() => setIsFilterOpen(false)}
+            selectedPlatforms={selectedPlatforms}
+            onPlatformToggle={handlePlatformToggle}
+          />
+        </div>
+
+        <MeetingScheduler
+          isOpen={isSchedulerOpen}
+          onClose={() => setIsSchedulerOpen(false)}
+          onSave={handleSaveMeeting}
+          selectedDate={selectedDate}
         />
-      </div>
 
-      <MeetingScheduler
-        isOpen={isSchedulerOpen}
-        onClose={() => setIsSchedulerOpen(false)}
-        onSave={handleSaveMeeting}
-        selectedDate={selectedDate}
-      />
-
-      {/* Platform Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-sm text-gray-600">Google Calendar</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span className="text-sm text-gray-600">Microsoft Calendar</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span className="text-sm text-gray-600">Zoom</span>
+        {/* Platform Status Bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-center space-x-6">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <span className="text-sm text-gray-600">Google Calendar</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span className="text-sm text-gray-600">Microsoft Calendar</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+              <span className="text-sm text-gray-600">Zoom</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 
