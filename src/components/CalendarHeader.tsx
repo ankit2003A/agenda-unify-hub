@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Calendar, Plus, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Filter, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import NotificationCenter from './NotificationCenter';
+import { Badge } from '@/components/ui/badge';
 import UserProfile from './UserProfile';
-import { Meeting } from '../types/Meeting';
+import { Meeting } from '@/types/Meeting';
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -28,43 +28,83 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  const totalMeetings = meetings.length;
+  const upcomingMeetings = meetings.filter(meeting => {
+    const meetingDate = new Date(meeting.date);
+    const today = new Date();
+    return meetingDate >= today;
+  }).length;
+
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        {/* Left Section */}
+        <div className="flex items-center space-x-6">
           <div className="flex items-center space-x-2">
-            <Calendar className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Agenda Hub</h1>
+            <div className="p-2 bg-blue-600 rounded-lg">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Agenda Hub
+            </h1>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={onPrevMonth} className="p-2">
-              <span className="sr-only">Previous month</span>
-              ←
-            </Button>
-            <h2 className="text-lg font-semibold text-gray-800 min-w-[200px] text-center">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
-            <Button variant="outline" onClick={onNextMonth} className="p-2">
-              <span className="sr-only">Next month</span>
-              →
-            </Button>
+          <div className="flex items-center space-x-4">
+            <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+              {totalMeetings} Total Meetings
+            </Badge>
+            <Badge variant="secondary" className="bg-green-50 text-green-700">
+              {upcomingMeetings} Upcoming
+            </Badge>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <NotificationCenter meetings={meetings} />
-          
-          <Button variant="outline" onClick={onFilterToggle} className="flex items-center space-x-2">
-            <Filter className="h-4 w-4" />
-            <span>Filter</span>
+        {/* Center Section */}
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrevMonth}
+            className="hover:bg-gray-50"
+          >
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           
-          <Button onClick={onCreateMeeting} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4" />
-            <span>New Meeting</span>
+          <h2 className="text-lg font-semibold text-gray-900 min-w-[160px] text-center">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h2>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNextMonth}
+            className="hover:bg-gray-50"
+          >
+            <ChevronRight className="h-4 w-4" />
           </Button>
+        </div>
 
+        {/* Right Section */}
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onFilterToggle}
+            className="flex items-center space-x-2 hover:bg-gray-50"
+          >
+            <Filter className="h-4 w-4" />
+            <span className="hidden sm:inline">Filter</span>
+          </Button>
+          
+          <Button
+            onClick={onCreateMeeting}
+            size="sm"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">New Meeting</span>
+          </Button>
+          
           <UserProfile />
         </div>
       </div>

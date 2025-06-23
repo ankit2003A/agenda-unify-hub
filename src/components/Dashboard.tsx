@@ -1,8 +1,10 @@
 
 import React from 'react';
-import { Calendar, Plus, MessageCircle } from 'lucide-react';
+import { Calendar, Plus, MessageCircle, Users, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import UserProfile from './UserProfile';
 
 interface DashboardProps {
   onViewSchedule: () => void;
@@ -11,60 +13,150 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onViewSchedule, onCreateMeeting, onOpenChat }) => {
+  const userName = localStorage.getItem('userName') || 'User';
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
+
+  const stats = [
+    { label: 'Today\'s Meetings', value: '3', icon: Calendar, color: 'text-blue-600 bg-blue-100' },
+    { label: 'This Week', value: '12', icon: Clock, color: 'text-green-600 bg-green-100' },
+    { label: 'Team Members', value: '8', icon: Users, color: 'text-purple-600 bg-purple-100' },
+    { label: 'Productivity', value: '94%', icon: TrendingUp, color: 'text-orange-600 bg-orange-100' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Agenda Hub</h1>
-          <p className="text-gray-600">Manage your meetings and connect with your team</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Agenda Hub
+            </h1>
+          </div>
+          <UserProfile />
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Welcome Section */}
+        <div className="mb-8 animate-fade-in">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            {greeting}, {userName}! 👋
+          </h2>
+          <p className="text-gray-600 text-lg">
+            Ready to manage your meetings and connect with your team?
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onViewSchedule}>
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <Calendar className="h-6 w-6 text-blue-600" />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <Card key={stat.label} className="hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${stat.color}`}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Main Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer group animate-fade-in hover:scale-105" onClick={onViewSchedule}>
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Calendar className="h-8 w-8 text-white" />
               </div>
-              <CardTitle>View Schedule</CardTitle>
-              <CardDescription>See all your scheduled meetings in one place</CardDescription>
+              <CardTitle className="text-xl">View Schedule</CardTitle>
+              <CardDescription className="text-gray-600">
+                See all your scheduled meetings in a beautiful calendar view
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">
+            <CardContent className="pt-0">
+              <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700" variant="default">
                 Open Calendar
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onCreateMeeting}>
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <Plus className="h-6 w-6 text-green-600" />
+          <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer group animate-fade-in hover:scale-105" onClick={onCreateMeeting}>
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Plus className="h-8 w-8 text-white" />
               </div>
-              <CardTitle>Create New Meeting</CardTitle>
-              <CardDescription>Schedule a new meeting with your team</CardDescription>
+              <CardTitle className="text-xl">Create Meeting</CardTitle>
+              <CardDescription className="text-gray-600">
+                Schedule a new meeting with your team members
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">
+            <CardContent className="pt-0">
+              <Button className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700" variant="default">
                 Schedule Meeting
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onOpenChat}>
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                <MessageCircle className="h-6 w-6 text-purple-600" />
+          <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer group animate-fade-in hover:scale-105" onClick={onOpenChat}>
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <MessageCircle className="h-8 w-8 text-white" />
               </div>
-              <CardTitle>Team Chat</CardTitle>
-              <CardDescription>Connect and chat with team members</CardDescription>
+              <CardTitle className="text-xl">Team Chat</CardTitle>
+              <CardDescription className="text-gray-600">
+                Connect and chat with team members instantly
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">
+            <CardContent className="pt-0">
+              <Button className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700" variant="default">
                 Open Chat
               </Button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <span>Quick Actions</span>
+              <Badge variant="secondary">New</Badge>
+            </CardTitle>
+            <CardDescription>
+              Frequently used actions for faster productivity
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button variant="outline" className="h-12 flex flex-col space-y-1" onClick={onCreateMeeting}>
+                <Plus className="h-4 w-4" />
+                <span className="text-xs">Quick Meet</span>
+              </Button>
+              <Button variant="outline" className="h-12 flex flex-col space-y-1">
+                <Calendar className="h-4 w-4" />
+                <span className="text-xs">Today's Agenda</span>
+              </Button>
+              <Button variant="outline" className="h-12 flex flex-col space-y-1" onClick={onOpenChat}>
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-xs">Team Chat</span>
+              </Button>
+              <Button variant="outline" className="h-12 flex flex-col space-y-1">
+                <Users className="h-4 w-4" />
+                <span className="text-xs">Contacts</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

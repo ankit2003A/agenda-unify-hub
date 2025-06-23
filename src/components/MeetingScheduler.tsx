@@ -1,11 +1,16 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, User, Calendar as CalendarIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar, Clock, User, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { meetingSchema, MeetingForm } from '@/lib/validations';
 
 interface MeetingSchedulerProps {
   isOpen: boolean;
@@ -20,35 +25,59 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
   onSave,
   selectedDate,
 }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    date: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
-    time: '',
-    platform: '',
-    participants: '',
-    agenda: '',
-    recurrence: 'none',
-  });
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
-    setFormData({
+  const form = useForm<MeetingForm>({
+    resolver: zodResolver(meetingSchema),
+    defaultValues: {
       title: '',
-      date: '',
+      date: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
       time: '',
-      platform: '',
+      platform: undefined,
       participants: '',
       agenda: '',
       recurrence: 'none',
-    });
+    },
+  });
+
+  const onSubmit = async (data: MeetingForm) => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    try {
+      onSave(data);
+      form.reset();
+      onClose();
+      
+      toast({
+        title: "Meeting Scheduled",
+        description: `${data.title} has been scheduled for ${data.date} at ${data.time}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Scheduling Failed",
+        description: "Failed to schedule meeting. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const platforms = [
     { value: 'google', label: 'Google Meet', color: 'text-red-600' },
     { value: 'microsoft', label: 'Microsoft Teams', color: 'text-blue-600' },
     { value: 'zoom', label: 'Zoom', color: 'text-purple-600' },
+  ];
+
+  const recurrenceOptions = [
+    { value: 'none', label: 'No recurrence' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
   ];
 
   return (
@@ -61,114 +90,168 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Meeting Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Enter meeting title"
-                required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meeting Title *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter meeting title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="platform"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Platform *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {platforms.map((platform) => (
+                          <SelectItem key={platform.value} value={platform.value}>
+                            <span className={platform.color}>{platform.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="platform">Platform *</Label>
-              <Select value={formData.platform} onValueChange={(value) => setFormData({ ...formData, platform: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select platform" />
-                </SelectTrigger>
-                <SelectContent>
-                  {platforms.map((platform) => (
-                    <SelectItem key={platform.value} value={platform.value}>
-                      <span className={platform.color}>{platform.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center space-x-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>Date *</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date" className="flex items-center space-x-1">
-                <Calendar className="h-4 w-4" />
-                <span>Date *</span>
-              </Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
+              <FormField
+                control={form.control}
+                name="time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center space-x-1">
+                      <Clock className="h-4 w-4" />
+                      <span>Time *</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="time" className="flex items-center space-x-1">
-                <Clock className="h-4 w-4" />
-                <span>Time *</span>
-              </Label>
-              <Input
-                id="time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="participants" className="flex items-center space-x-1">
-              <User className="h-4 w-4" />
-              <span>Participants</span>
-            </Label>
-            <Input
-              id="participants"
-              value={formData.participants}
-              onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
-              placeholder="Enter email addresses separated by commas"
+            <FormField
+              control={form.control}
+              name="participants"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center space-x-1">
+                    <User className="h-4 w-4" />
+                    <span>Participants</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter email addresses separated by commas" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="agenda">Agenda</Label>
-            <textarea
-              id="agenda"
-              value={formData.agenda}
-              onChange={(e) => setFormData({ ...formData, agenda: e.target.value })}
-              placeholder="Meeting agenda or description"
-              className="w-full p-3 border border-gray-300 rounded-md resize-none h-24 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <FormField
+              control={form.control}
+              name="agenda"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Agenda</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Meeting agenda or description"
+                      className="resize-none h-24"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="recurrence">Recurrence</Label>
-            <Select value={formData.recurrence} onValueChange={(value) => setFormData({ ...formData, recurrence: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No recurrence</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <FormField
+              control={form.control}
+              name="recurrence"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recurrence</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {recurrenceOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-              Schedule Meeting
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Scheduling...
+                  </>
+                ) : (
+                  <>
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    Schedule Meeting
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
