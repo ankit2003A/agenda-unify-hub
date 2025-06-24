@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { LogOut, User, Settings, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import ProfileManager from './ProfileManager';
 
 const UserProfile: React.FC = () => {
@@ -12,22 +12,28 @@ const UserProfile: React.FC = () => {
   const [showProfileManager, setShowProfileManager] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut, user } = useAuth();
   
-  const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
-  const userName = localStorage.getItem('userName') || userEmail.split('@')[0];
+  const userEmail = user?.email || localStorage.getItem('userEmail') || 'user@example.com';
+  const userName = user?.email?.split('@')[0] || localStorage.getItem('userName') || userEmail.split('@')[0];
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userProfile');
+  const handleLogout = async () => {
+    const { error } = await signOut();
     
-    toast({
-      title: "Signed Out",
-      description: "You have been successfully signed out.",
-    });
-    
-    navigate('/login');
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+      
+      navigate('/login');
+    }
   };
 
   return (

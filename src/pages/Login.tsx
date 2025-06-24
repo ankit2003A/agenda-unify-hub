@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,14 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { LogIn, Calendar, Loader2 } from 'lucide-react';
+import { LogIn, Calendar, Loader2, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { loginSchema, LoginForm } from '@/lib/validations';
+import { useAuth } from '@/hooks/useAuth';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { signIn, signUp } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -27,24 +30,33 @@ const Login: React.FC = () => {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
     try {
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userEmail', data.email);
-      localStorage.setItem('userName', data.email.split('@')[0]);
-      
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
-      });
-      
-      navigate('/');
+      const { error } = isSignUp 
+        ? await signUp(data.email, data.password)
+        : await signIn(data.email, data.password);
+
+      if (error) {
+        toast({
+          title: isSignUp ? "Sign Up Failed" : "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: isSignUp ? "Account Created!" : "Welcome back!",
+          description: isSignUp 
+            ? "Please check your email to verify your account."
+            : "You have been successfully logged in.",
+        });
+        
+        if (!isSignUp) {
+          navigate('/');
+        }
+      }
     } catch (error) {
       toast({
-        title: "Login Failed",
-        description: "Invalid credentials. Please try again.",
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -64,9 +76,14 @@ const Login: React.FC = () => {
               Agenda Hub
             </span>
           </div>
-          <CardTitle className="text-2xl font-semibold text-gray-900">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-semibold text-gray-900">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          </CardTitle>
           <CardDescription className="text-gray-600">
-            Sign in to manage your meetings and connect with your team
+            {isSignUp 
+              ? 'Sign up to start managing your meetings'
+              : 'Sign in to manage your meetings and connect with your team'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -117,22 +134,34 @@ const Login: React.FC = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Signing In...
+                    {isSignUp ? 'Creating Account...' : 'Signing In...'}
                   </>
                 ) : (
                   <>
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Sign In
+                    {isSignUp ? (
+                      <UserPlus className="h-4 w-4 mr-2" />
+                    ) : (
+                      <LogIn className="h-4 w-4 mr-2" />
+                    )}
+                    {isSignUp ? 'Create Account' : 'Sign In'}
                   </>
                 )}
               </Button>
             </form>
           </Form>
           
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-700 text-center font-medium">
-              Demo Mode: Use any email and password to continue
-            </p>
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              {isSignUp 
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"
+              }
+            </Button>
           </div>
         </CardContent>
       </Card>
