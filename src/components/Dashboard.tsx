@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, MessageCircle, Users, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import UserProfile from './UserProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { mockMeetings } from '../data/mockMeetings';
 
 interface DashboardProps {
   onViewSchedule: () => void;
@@ -13,13 +15,46 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onViewSchedule, onCreateMeeting, onOpenChat }) => {
-  const userName = localStorage.getItem('userName') || 'User';
+  const { user } = useAuth();
+  const [todaysMeetings, setTodaysMeetings] = useState(0);
+  const [weeklyMeetings, setWeeklyMeetings] = useState(0);
+  
+  const userName = user?.email?.split('@')[0] || localStorage.getItem('userName') || 'User';
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
 
+  useEffect(() => {
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    const todayMeetingCount = mockMeetings.filter(meeting => meeting.date === today).length;
+    setTodaysMeetings(todayMeetingCount);
+
+    // Get this week's meetings
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const endOfWeek = new Date();
+    endOfWeek.setDate(endOfWeek.getDate() + (6 - endOfWeek.getDay()));
+    
+    const weeklyMeetingCount = mockMeetings.filter(meeting => {
+      const meetingDate = new Date(meeting.date);
+      return meetingDate >= startOfWeek && meetingDate <= endOfWeek;
+    }).length;
+    setWeeklyMeetings(weeklyMeetingCount);
+  }, []);
+
   const stats = [
-    { label: 'Today\'s Meetings', value: '3', icon: Calendar, color: 'text-blue-600 bg-blue-100' },
-    { label: 'This Week', value: '12', icon: Clock, color: 'text-green-600 bg-green-100' },
+    { 
+      label: 'Today\'s Meetings', 
+      value: todaysMeetings === 0 ? 'No meetings' : todaysMeetings.toString(), 
+      icon: Calendar, 
+      color: 'text-blue-600 bg-blue-100' 
+    },
+    { 
+      label: 'This Week', 
+      value: weeklyMeetings === 0 ? 'Free week!' : weeklyMeetings.toString(), 
+      icon: Clock, 
+      color: 'text-green-600 bg-green-100' 
+    },
     { label: 'Team Members', value: '8', icon: Users, color: 'text-purple-600 bg-purple-100' },
     { label: 'Productivity', value: '94%', icon: TrendingUp, color: 'text-orange-600 bg-orange-100' },
   ];
@@ -47,9 +82,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onViewSchedule, onCreateMeeting, 
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             {greeting}, {userName}! 👋
           </h2>
-          <p className="text-gray-600 text-lg">
-            Ready to manage your meetings and connect with your team?
-          </p>
+          {todaysMeetings === 0 ? (
+            <p className="text-gray-600 text-lg">
+              No meetings today! Sit back and relax. 😌
+            </p>
+          ) : (
+            <p className="text-gray-600 text-lg">
+              You have {todaysMeetings} meeting{todaysMeetings > 1 ? 's' : ''} scheduled for today.
+            </p>
+          )}
         </div>
 
         {/* Stats Grid */}

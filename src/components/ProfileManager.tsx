@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Camera, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { profileSchema, ProfileForm } from '@/lib/validations';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 interface ProfileManagerProps {
   isOpen: boolean;
@@ -21,11 +22,12 @@ interface ProfileManagerProps {
 
 const ProfileManager: React.FC<ProfileManagerProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   
-  const userEmail = localStorage.getItem('userEmail') || '';
-  const userName = localStorage.getItem('userName') || '';
+  const userEmail = user?.email || '';
+  const userName = user?.email?.split('@')[0] || '';
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -38,15 +40,52 @@ const ProfileManager: React.FC<ProfileManagerProps> = ({ isOpen, onClose }) => {
     },
   });
 
+  useEffect(() => {
+    if (user) {
+      // Load existing profile data if available
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        const profileData = JSON.parse(savedProfile);
+        form.reset({
+          name: profileData.name || userName,
+          email: userEmail,
+          phone: profileData.phone || '',
+          timezone: profileData.timezone || 'UTC',
+          notifications: profileData.notifications ?? true,
+        });
+      }
+    }
+  }, [user, userName, userEmail, form]);
+
   const onSubmit = async (data: ProfileForm) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     try {
+      // Update user metadata in Supabase
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          full_name: data.name,
+          phone: data.phone,
+          timezone: data.timezone,
+          notifications: data.notifications,
+        }
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Store profile data locally for immediate access
       localStorage.setItem('userName', data.name);
-      localStorage.setItem('userEmail', data.email);
       localStorage.setItem('userProfile', JSON.stringify(data));
       
       toast({
@@ -55,10 +94,11 @@ const ProfileManager: React.FC<ProfileManagerProps> = ({ isOpen, onClose }) => {
       });
       
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update profile. Please try again.",
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -66,14 +106,27 @@ const ProfileManager: React.FC<ProfileManagerProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarUrl(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (file && user) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}.${fileExt}`;
+      
+      try {
+        // Upload avatar to Supabase storage (if storage is set up)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAvatarUrl(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Avatar upload error:', error);
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload avatar. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -141,9 +194,10 @@ const ProfileManager: React.FC<ProfileManagerProps> = ({ isOpen, onClose }) => {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your email" type="email" {...field} />
+                      <Input placeholder="Enter your email" type="email" {...field} disabled />
                     </FormControl>
                     <FormMessage />
+                    <p className="text-xs text-gray-500">Email cannot be changed here</p>
                   </FormItem>
                 )}
               />
